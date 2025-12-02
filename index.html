@@ -1,1 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bright Minds Next-Gen</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.7.0/vanilla-tilt.min.js"></script>
 
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+            --glass-surface: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-size: cover;
+            background-attachment: fixed;
+            color: #1e293b;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* UTILS */
+        .glass-panel {
+            background: var(--glass-surface);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ANIMATIONS */
+        @keyframes fadeScaleIn {
+            from { opacity: 0; transform: scale(0.98) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-enter { animation: fadeScaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+        .loading-skeleton {
+            background: linear-gradient(to right, #f1f5f9 4%, #e2e8f0 25%, #f1f5f9 36%);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        
+        .slow-bounce { animation-duration: 2s; }
+
+        /* TOAST */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast {
+            pointer-events: auto; background: white; padding: 12px 20px; border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px;
+            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border-left: 4px solid #4f46e5; font-weight: 600; font-size: 0.9rem;
+        }
+        .toast.show { transform: translateX(0); }
+
+        /* TRACKER */
+        .circular-chart { display: block; margin: 0 auto; max-width: 100%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: #e2e8f0; stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; animation: progress 1s ease-out forwards; }
+        @keyframes progress { 0% { stroke-dasharray: 0 100; } }
+        /* UPDATED: Reduced font size to 8px to fix overlap issues */
+        .percentage { 
+            fill: #334155; 
+            font-family: 'Outfit', sans-serif; 
+            font-weight: bold; 
+            font-size: 8px; 
+            text-anchor: middle;
+            dominant-baseline: middle; 
+        }
+
+        /* CHAT */
+        .bubble-user { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border-radius: 18px 18px 4px 18px; }
+        .bubble-ai { background: white; color: #334155; border-radius: 18px 18px 18px 4px; border: 1px solid #e2e8f0; }
+        .typing-indicator span {
+            display: inline-block; width: 6px; height: 6px; background-color: #94a3b8; border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out both; margin: 0 2px;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        /* NAV & UI */
+        .nav-item { transition: all 0.3s ease; position: relative; }
+        .nav-item.active { background: white; color: #4f46e5; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15); }
+        .nav-item.active::after {
+            content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+            width: 4px; height: 4px; background: #4f46e5; border-radius: 50%;
+        }
+        .avatar-btn { transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .avatar-btn:hover { transform: scale(1.15); }
+        .avatar-btn:active { transform: scale(0.95); }
+        
+        .chat-float-enter { animation: floatUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes floatUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        
+        /* FIXED: Removed @apply rule causing syntax errors. Classes are now applied via JS or standard CSS */
+        .contact-item-active-style { background-color: #eef2ff; border-color: #c7d2fe; }
+    </style>
+</head>
+<body class="flex items-center justify-center p-2 sm:p-6">
+
+    <div id="toast-container"></div>
+
+    <div id="avatar-modal-overlay" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md hidden animate-enter">
+        <div class="glass-panel p-8 rounded-[32px] max-w-md w-full text-center shadow-2xl shadow-purple-500/20 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-pink-500 to-violet-600"></div>
+            <h2 class="text-3xl font-extrabold text-slate-800 mb-2 font-['Outfit']">Choose Your Hero</h2>
+            <p class="text-slate-500 mb-8 text-sm">This avatar will represent you on the Leaderboard!</p>
+            
+            <div class="grid grid-cols-5 gap-4 mb-6">
+                <button type="button" onclick="selectAvatar('👨‍🚀')" class="avatar-btn text-4xl p-3 bg-white rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-300">👨‍🚀</button>
+                <button type="button" onclick="selectAvatar('🧙‍♀️')" class="avatar-btn text-4xl p-3 bg-white rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-300">🧙‍♀️</button>
+                <button type="button" onclick="selectAvatar('🕵️‍♂️')" class="avatar-btn text-4xl p-3 bg-white rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-300">🕵️‍♂️</button>
+                <button type="button" onclick="selectAvatar('🦸‍♂️')" class="avatar-btn text-4xl p-3 bg-white rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-300">🦸‍♂️</button>
+                <button type="button" onclick="selectAvatar('🧞‍♂️')" class="avatar-btn text-4xl p-3 bg-white rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-300">🧞‍♂️</button>
+                <button type="button" onclick="selectAvatar('🦊')" class="avatar-btn text-4xl p-3 bg-white rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-300">🦊</button>
+                <button type="button" onclick="selectAvatar('🦄')" class="avatar-btn text-4xl p-3 bg-white rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-300">🦄</button>
+                <button type="button" onclick="selectAvatar('🦁')" class="avatar-btn text-4xl p-3 bg-white rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-300">🦁</button>
+                <button type="button" onclick="selectAvatar('🤖')" class="avatar-btn text-4xl p-3 bg-white rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-300">🤖</button>
+                <button type="button" onclick="selectAvatar('👽')" class="avatar-btn text-4xl p-3 bg-white rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-300">👽</button>
+            </div>
+            <button type="button" onclick="selectAvatar('👤')" class="text-sm text-slate-400 hover:text-slate-600 underline">Skip for now</button>
+        </div>
+    </div>
+
+    <!-- Enhanced Role Login Modal -->
+    <div id="role-modal-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md">
+        <div class="glass-panel p-8 rounded-[32px] max-w-sm w-full text-center animate-enter shadow-2xl shadow-indigo-500/20">
+            <div class="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-lg rotate-3 hover:rotate-6 transition duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+            </div>
+            <h2 class="text-3xl font-extrabold text-slate-800 mb-2 font-['Outfit']">Welcome Back</h2>
+            <p class="text-slate-500 mb-6 text-sm">Who are you?</p>
+
+            <!-- Role Selection Buttons -->
+            <div id="role-selection-buttons" class="space-y-3">
+                <button type="button" onclick="showLoginForm('Student')" class="group w-full py-4 rounded-2xl bg-white border border-slate-200 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/20 transition-all duration-200 font-bold text-slate-700 flex items-center justify-center gap-3 relative overflow-hidden">
+                    <span class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                    <span class="relative z-10">👨‍🎓 Student</span>
+                </button>
+                <button type="button" onclick="showLoginForm('Teacher')" class="group w-full py-4 rounded-2xl bg-white border border-slate-200 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/20 transition-all duration-200 font-bold text-slate-700 flex items-center justify-center gap-3 relative overflow-hidden">
+                    <span class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                    <span class="relative z-10">👩‍🏫 Teacher</span>
+                </button>
+                <button type="button" onclick="showLoginForm('Parent')" class="group w-full py-4 rounded-2xl bg-white border border-slate-200 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/20 transition-all duration-200 font-bold text-slate-700 flex items-center justify-center gap-3 relative overflow-hidden">
+                    <span class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                    <span class="relative z-10">🏠 Parent</span>
+                </button>
+            </div>
+
+            <!-- Dynamic Login Form -->
+            <div id="login-form-container" class="hidden text-left space-y-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <button onclick="resetLogin()" class="text-slate-400 hover:text-slate-600 text-sm">← Back</button>
+                    <h3 id="form-role-title" class="font-bold text-indigo-600 ml-auto">Role</h3>
+                </div>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1" id="label-name">Name</label>
+                        <input type="text" id="login-name" class="w-full p-3 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none" placeholder="Enter Name">
+                    </div>
+                    
+                    <div id="class-select-container">
+                        <label class="block text-xs font-bold text-slate-500 mb-1" id="label-class">Class</label>
+                        <select id="login-class" class="w-full p-3 rounded-xl border border-slate-200 bg-white focus:border-indigo-500 outline-none">
+                            <option value="">Select Class</option>
+                            <option value="1">Class 1</option><option value="2">Class 2</option><option value="3">Class 3</option>
+                            <option value="4">Class 4</option><option value="5">Class 5</option><option value="6">Class 6</option>
+                            <option value="7">Class 7</option><option value="8">Class 8</option><option value="9">Class 9</option>
+                            <option value="10">Class 10</option><option value="11">Class 11</option><option value="12">Class 12</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="button" onclick="completeLogin()" class="w-full py-3 mt-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/30">Enter Portal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="camera-modal-overlay" class="hidden fixed inset-0 z-[100] bg-black flex flex-col animate-enter">
+        <div class="relative flex-1 w-full flex items-center justify-center overflow-hidden">
+            <video id="camera-video" autoplay playsinline muted class="absolute w-full h-full object-cover"></video>
+            <canvas id="camera-canvas" class="hidden"></canvas>
+            <div class="absolute inset-0 pointer-events-none m-8 border-2 border-white/30 rounded-3xl overflow-hidden">
+                <div class="absolute top-0 w-full h-1 bg-blue-500/80 shadow-[0_0_15px_rgba(59,130,246,0.8)] animate-[scan_2s_ease-in-out_infinite]"></div>
+                <div class="absolute bottom-8 left-0 right-0 text-center">
+                    <span class="bg-black/60 backdrop-blur text-white px-4 py-2 rounded-full text-sm font-medium tracking-wide">Align Question Here</span>
+                </div>
+            </div>
+        </div>
+        <div class="h-36 bg-black/90 backdrop-blur-xl flex items-center justify-around pb-6 px-8">
+            <button type="button" id="btn-close-camera" aria-label="Close Camera" class="p-4 rounded-full bg-gray-800 text-white hover:bg-gray-700 transition"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <button type="button" id="btn-take-photo" aria-label="Take Photo" class="w-20 h-20 rounded-full border-[6px] border-white/30 flex items-center justify-center relative group"><div class="w-14 h-14 bg-white rounded-full transition-all duration-200 group-active:scale-90 shadow-[0_0_20px_rgba(255,255,255,0.5)]"></div></button>
+            <div class="w-12"></div>
+        </div>
+    </div>
+
+    <div id="main-app-content" class="w-full max-w-[1280px] h-[95vh] glass-panel rounded-[40px] overflow-hidden flex flex-col opacity-0 transition-opacity duration-700 shadow-2xl relative z-10">
+        
+        <header class="px-8 py-5 flex justify-between items-center border-b border-white/30 bg-white/40 backdrop-blur-md z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800 tracking-tight font-['Outfit'] leading-none">Bright<span class="text-indigo-600">Minds</span></h1>
+                    <p class="text-[10px] text-slate-500 font-medium tracking-wide uppercase">Student Portal v2.0</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="flex items-center gap-2">
+                        <span id="user-avatar-display" class="text-2xl animate-bounce hidden slow-bounce">👋</span>
+                        <div class="flex flex-col items-end">
+                            <div id="user-role" class="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">Guest</div>
+                            <div id="user-class-display" class="text-[10px] text-slate-400 font-mono mt-0.5 font-bold">--</div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" onclick="logoutUser()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-500 flex items-center justify-center transition-all" title="Logout" aria-label="Logout">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="px-6 py-3 bg-white/30 border-b border-white/20 overflow-x-auto no-scrollbar">
+            <nav class="flex items-center gap-2 sm:justify-center min-w-max">
+                <button type="button" onclick="showTab('assignments')" id="nav-assignments" class="nav-item active px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 flex items-center gap-2 hover:bg-white/50">
+                    <span class="text-lg">📚</span> Homework
+                </button>
+                <button type="button" onclick="showTab('quiz')" id="nav-quiz" class="nav-item px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 flex items-center gap-2 hover:bg-white/50">
+                    <span class="text-lg">⚡</span> Quiz Time
+                </button>
+                <button type="button" onclick="showTab('tracker')" id="nav-tracker" class="nav-item px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 flex items-center gap-2 hover:bg-white/50">
+                    <span class="text-lg">📊</span> Progress
+                </button>
+                <button type="button" onclick="showTab('notices_holidays')" id="nav-notices_holidays" class="nav-item px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 flex items-center gap-2 hover:bg-white/50">
+                    <span class="text-lg">📢</span> Updates
+                </button>
+                <button type="button" onclick="showTab('communication')" id="nav-communication" class="nav-item px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 flex items-center gap-2 hover:bg-white/50">
+                    <span class="text-lg">💬</span> Chat
+                </button>
+            </nav>
+        </div>
+
+        <main class="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth relative">
+            
+            <section id="assignments" class="tab-content animate-enter max-w-5xl mx-auto">
+                <div id="teacher-upload-area" class="hidden glass-panel p-6 rounded-3xl mb-8 border border-indigo-100 shadow-lg relative overflow-hidden" data-tilt data-tilt-max="2" data-tilt-glare data-tilt-max-glare="0.1">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                    <h3 class="font-bold text-xl text-indigo-900 mb-4 flex items-center gap-2"><span class="text-2xl">✍️</span> Create Assignment</h3>
+                    <form onsubmit="uploadAssignment(event)" class="space-y-4 relative z-10">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <input type="text" id="assign-title" aria-label="Assignment Title" placeholder="Title" class="w-full p-3 rounded-xl bg-white border border-slate-200 focus:border-indigo-500 outline-none" required>
+                            <input type="text" id="assign-subject" aria-label="Subject" placeholder="Subject" class="w-full p-3 rounded-xl bg-white border border-slate-200 outline-none" required>
+                            <input type="date" id="assign-due" aria-label="Due Date" class="w-full p-3 rounded-xl bg-white border border-slate-200 outline-none" required>
+                        </div>
+                        <textarea id="assign-desc" aria-label="Instructions" placeholder="Instructions..." class="w-full p-3 rounded-xl bg-white border border-slate-200 h-24 outline-none resize-none" required></textarea>
+                        <button type="submit" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition">Publish</button>
+                    </form>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">My Tasks</h2>
+                <div id="assignment-list" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div class="h-48 rounded-3xl loading-skeleton opacity-50"></div><div class="h-48 rounded-3xl loading-skeleton opacity-50"></div>
+                </div>
+            </section>
+
+            <section id="quiz" class="tab-content hidden animate-enter max-w-4xl mx-auto">
+                <div id="teacher-quiz-upload-area" class="hidden glass-panel p-6 rounded-3xl mb-8">
+                    <h3 class="font-bold text-indigo-900 mb-4">➕ Add Question</h3>
+                    <form onsubmit="uploadQuiz(event)" class="space-y-3">
+                        <input type="text" id="quiz-subject" aria-label="Quiz Subject" placeholder="Subject (e.g. Math)" class="w-full p-3 rounded-xl bg-white border border-slate-200" required>
+                        <input type="text" id="quiz-q" aria-label="Question Text" placeholder="Question Text" class="w-full p-3 rounded-xl bg-white border border-slate-200" required>
+                        <div class="grid grid-cols-2 gap-3">
+                            <input type="text" id="opt-a" aria-label="Option A" placeholder="A" class="p-3 rounded-xl bg-white border" required>
+                            <input type="text" id="opt-b" aria-label="Option B" placeholder="B" class="p-3 rounded-xl bg-white border" required>
+                            <input type="text" id="opt-c" aria-label="Option C" placeholder="C" class="p-3 rounded-xl bg-white border" required>
+                            <input type="text" id="opt-d" aria-label="Option D" placeholder="D" class="p-3 rounded-xl bg-white border" required>
+                        </div>
+                        <div class="flex gap-3">
+                            <select id="quiz-ans" aria-label="Correct Answer" class="w-1/3 p-3 rounded-xl bg-white border font-bold"><option value="A">Ans: A</option><option value="B">Ans: B</option><option value="C">Ans: C</option><option value="D">Ans: D</option></select>
+                            <button type="submit" class="w-2/3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700">Add</button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-8 border-t border-slate-200 pt-6">
+                        <h4 class="font-bold text-indigo-900 mb-4 flex items-center gap-2"><span class="text-xl">🏦</span> Question Bank (Teachers)</h4>
+                        <div id="teacher-quiz-list" class="space-y-3"></div>
+                    </div>
+                </div>
+                
+                <div id="student-quiz-area" class="w-full">
+                    <div id="quiz-card" class="glass-panel p-8 rounded-[32px] shadow-2xl relative overflow-hidden min-h-[400px] flex flex-col justify-center items-center text-center border-t border-white/60" data-tilt data-tilt-glare data-tilt-max-glare="0.2">
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-200"><div id="quiz-progress" class="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500" style="width: 0%"></div></div>
+                        
+                        <div id="quiz-timer-container" class="hidden absolute top-4 right-4 bg-white/80 backdrop-blur px-3 py-1.5 rounded-lg border border-indigo-100 flex items-center gap-2 shadow-sm">
+                            <span class="text-sm">⏱️</span>
+                            <span id="quiz-timer-display" class="font-mono font-bold text-indigo-600">00:00</span>
+                        </div>
+
+                        <div id="quiz-start-view">
+                            <div class="text-6xl mb-4">🧠</div><h2 class="text-3xl font-extrabold text-slate-800 mb-2">Wisewhiz Challenge</h2><p class="text-slate-500 mb-8">Test your skills across all subjects!</p>
+                            <button type="button" onclick="startQuiz()" class="px-10 py-4 bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-bold text-lg rounded-2xl shadow-xl hover:scale-105 transition-transform">Start Game</button>
+                        </div>
+                        <div id="quiz-game-view" class="hidden w-full max-w-2xl">
+                            <div class="flex flex-col items-center">
+                                <span id="q-subject" class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">GENERAL</span>
+                                <span id="q-counter" class="text-xs font-bold uppercase tracking-wider text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">Question 1</span>
+                            </div>
+                            <h3 id="q-text" class="text-2xl md:text-3xl font-bold text-slate-800 mt-6 mb-10 leading-tight">...</h3>
+                            <div id="q-options" class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full"></div>
+                        </div>
+                        <div id="quiz-end-view" class="hidden">
+                            <div class="text-7xl mb-4 animate-bounce">🏆</div><h2 class="text-3xl font-bold text-slate-800">Quiz Complete!</h2>
+                            <div class="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 my-6" id="final-score">0/0</div>
+                            <div class="mb-6 inline-flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-xl text-slate-600 font-medium">
+                                <span>⏱️ Time Taken:</span>
+                                <span id="final-time" class="font-bold text-indigo-600">00:00</span>
+                            </div>
+                            <div>
+                                <button type="button" onclick="location.reload()" class="text-slate-500 hover:text-slate-700 underline">Play Again</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-12">
+                    <div class="glass-panel rounded-3xl overflow-hidden border border-white/40">
+                        <div class="bg-indigo-50/50 p-4 border-b border-indigo-100 flex justify-between items-center">
+                            <h3 class="font-bold text-indigo-900 flex items-center gap-2"><span class="text-xl">🏅</span> Top Students</h3>
+                            <span class="text-xs text-indigo-400 font-mono">LIVE UPDATES</span>
+                        </div>
+                        <table class="w-full"><tbody id="leaderboard-body" class="text-sm text-slate-600 divide-y divide-slate-100"><tr><td class="p-6 text-center text-slate-400">Waiting for results...</td></tr></tbody></table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tracker" class="tab-content hidden animate-enter max-w-6xl mx-auto">
+                <h2 class="text-2xl font-bold text-slate-800 mb-8">Performance Analytics</h2>
+                <div id="tracker-data" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="glass-panel p-8 rounded-[32px] flex flex-col items-center text-center relative overflow-hidden group hover:-translate-y-1 transition duration-300" data-tilt>
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
+                        <svg viewBox="0 0 36 36" class="circular-chart text-blue-500 w-32 h-32 mb-4">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="circle" stroke-dasharray="0, 100" id="circle-assign" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <text x="18" y="18" class="percentage" id="text-assign">0%</text>
+                        </svg>
+                        <h3 class="text-lg font-bold text-slate-700" id="label-assign">Assignments</h3><p class="text-sm text-slate-400" id="sub-assign">Completion Rate</p>
+                    </div>
+                    <div class="glass-panel p-8 rounded-[32px] flex flex-col items-center text-center relative overflow-hidden group hover:-translate-y-1 transition duration-300" data-tilt>
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-purple-500"></div>
+                        <svg viewBox="0 0 36 36" class="circular-chart text-purple-500 w-32 h-32 mb-4">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="circle" stroke-dasharray="0, 100" id="circle-score" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <text x="18" y="18" class="percentage" id="text-score">0%</text>
+                        </svg>
+                        <h3 class="text-lg font-bold text-slate-700" id="label-avg">Avg. Score</h3><p class="text-sm text-slate-400">Quiz Performance</p>
+                    </div>
+                    <div class="glass-panel p-8 rounded-[32px] flex flex-col items-center text-center relative overflow-hidden group hover:-translate-y-1 transition duration-300" data-tilt>
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-emerald-500"></div>
+                        <div class="w-32 h-32 rounded-full bg-emerald-50 flex items-center justify-center mb-4 text-4xl font-bold text-emerald-600 shadow-inner" id="val-attempts">0</div>
+                        <h3 class="text-lg font-bold text-slate-700" id="label-attempts">Quiz Attempts</h3><p class="text-sm text-slate-400">Sessions Completed</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="notices_holidays" class="tab-content hidden animate-enter max-w-5xl mx-auto">
+                <div id="teacher-comms-area" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="glass-panel p-6 rounded-3xl border-t-4 border-blue-500">
+                        <h3 class="font-bold text-blue-800 mb-3">📢 Post Notice</h3>
+                        <form onsubmit="uploadNotice(event)" class="space-y-3"><input type="text" id="note-title" aria-label="Notice Title" placeholder="Title" class="w-full p-3 rounded-xl border" required><textarea id="note-content" aria-label="Notice Content" placeholder="Message..." class="w-full p-3 rounded-xl border h-20 resize-none" required></textarea><button type="submit" class="w-full py-2 bg-blue-600 text-white rounded-xl font-bold">Post</button></form>
+                    </div>
+                    <div class="glass-panel p-6 rounded-3xl border-t-4 border-green-500">
+                        <h3 class="font-bold text-green-800 mb-3">🗓️ Add Holiday</h3>
+                        <form onsubmit="addHoliday(event)" class="space-y-3"><input type="date" id="hol-date" aria-label="Holiday Date" class="w-full p-3 rounded-xl border" required><input type="text" id="hol-reason" aria-label="Holiday Reason" placeholder="Occasion" class="w-full p-3 rounded-xl border" required><button type="submit" class="w-full py-2 bg-green-600 text-white rounded-xl font-bold">Save</button></form>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div><h3 class="font-bold text-slate-400 uppercase tracking-wider text-xs mb-4">Recent Announcements</h3><div id="notices-list" class="space-y-4"></div></div>
+                    <div><h3 class="font-bold text-slate-400 uppercase tracking-wider text-xs mb-4">Upcoming Holidays</h3><div id="holidays-list" class="space-y-4"></div></div>
+                </div>
+            </section>
+
+            <!-- New Communication Tab -->
+            <section id="communication" class="tab-content hidden animate-enter max-w-6xl mx-auto h-[80vh]">
+                <div class="glass-panel rounded-3xl h-full flex overflow-hidden border border-white/50">
+                    <!-- Sidebar: Contacts -->
+                    <div class="w-1/3 border-r border-slate-200 bg-slate-50/50 flex flex-col">
+                        <div class="p-4 border-b border-slate-200">
+                            <h3 class="font-bold text-slate-700">Contacts</h3>
+                            <p id="contact-subtitle" class="text-xs text-slate-400">Classmates & Teachers</p>
+                        </div>
+                        <div id="contacts-list" class="flex-1 overflow-y-auto p-3 space-y-2">
+                            <!-- Populated via JS -->
+                            <div class="text-center p-4 text-slate-400 text-sm">Loading...</div>
+                        </div>
+                    </div>
+                    <!-- Main: Chat Area -->
+                    <div class="flex-1 flex flex-col bg-white/60">
+                        <div id="chat-header" class="p-4 border-b border-slate-200 bg-white/80 backdrop-blur flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-xl">💬</div>
+                            <div>
+                                <h3 class="font-bold text-slate-800">Select a Contact</h3>
+                                <p class="text-xs text-green-500 flex items-center gap-1 hidden" id="chat-status"><span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Online</p>
+                            </div>
+                        </div>
+                        <div id="messages-area" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
+                            <div class="flex flex-col items-center justify-center h-full text-slate-400">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="mb-2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                                <p>Start a conversation</p>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-white border-t border-slate-200 flex gap-2">
+                            <input type="text" id="msg-input" placeholder="Type a message..." class="flex-1 p-3 rounded-xl bg-slate-100 border-transparent focus:bg-white focus:border-indigo-500 outline-none transition" disabled>
+                            <button id="msg-send-btn" onclick="sendUserMessage()" class="p-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Floating Chat Button -->
+    <button onclick="toggleAiChat()" class="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-full shadow-lg flex items-center justify-center text-white text-3xl hover:scale-110 transition z-[60]" aria-label="Open AI Assistant">
+        🤖
+    </button>
+
+    <!-- Floating Chat Window (Moved out of Main) -->
+    <section id="ai_tutor" class="fixed bottom-28 right-6 w-[90vw] sm:w-[400px] h-[60vh] sm:h-[550px] bg-white rounded-3xl shadow-2xl z-[60] flex flex-col border border-indigo-100 hidden transform origin-bottom-right transition-all duration-300">
+        <div class="flex-1 rounded-[32px] flex flex-col overflow-hidden relative">
+            <div class="p-4 border-b border-slate-100 bg-white/50 flex justify-between items-center">
+                <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg shadow-lg">🤖</div><div><h3 class="font-bold text-slate-800 leading-tight">Wisewhiz</h3><p class="text-[10px] text-green-500 font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> ONLINE</p></div></div>
+                <button type="button" onclick="document.getElementById('chat-history').innerHTML = ''; renderMsg('ai', 'Hello! I am Wisewhiz. Ready to solve problems.');" class="text-xs text-slate-400 hover:text-slate-600">Clear Chat</button>
+            </div>
+            <div id="chat-history" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 scroll-smooth"><div class="flex justify-start"><div class="bubble-ai p-4 max-w-[85%] shadow-sm text-sm"><strong>Hi there! 👋</strong><br>I'm Wisewhiz. Use the camera to scan homework or type a question below.</div></div></div>
+            <div id="ai-typing" class="hidden px-6 py-2 text-xs text-slate-400 typing-indicator">Wisewhiz is thinking <span></span><span></span><span></span></div>
+            <div class="p-4 bg-white border-t border-slate-100">
+                <div id="file-preview-area" class="hidden mb-3 relative inline-block p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div id="img-preview-container" class="hidden">
+                        <img id="img-preview" alt="Image Preview" class="h-20 rounded-lg shadow-sm">
+                    </div>
+                    <div id="pdf-preview-container" class="hidden flex items-center gap-2 pr-3">
+                        <div class="w-10 h-10 bg-red-50 text-red-500 rounded-lg flex items-center justify-center">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        </div>
+                        <div class="text-xs text-slate-600 font-medium max-w-[150px] truncate" id="pdf-name">document.pdf</div>
+                    </div>
+                    <button type="button" aria-label="Clear File" onclick="clearFile()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
+                <div class="flex gap-2 items-end">
+                    <input type="file" id="file-cam" aria-label="Take Photo" accept="image/*" capture="environment" class="hidden" onchange="handleFile(this)">
+                    <input type="file" id="file-gal" aria-label="Upload Image" accept="image/*" class="hidden" onchange="handleFile(this)">
+                    <input type="file" id="file-pdf" aria-label="Upload PDF" accept="application/pdf" class="hidden" onchange="handleFile(this)">
+                    
+                    <button type="button" aria-label="Open Camera" onclick="openCameraModal()" class="p-3 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg></button>
+                    <button type="button" aria-label="Open Gallery" onclick="document.getElementById('file-gal').click()" class="p-3 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></button>
+                    <button type="button" aria-label="Upload PDF" onclick="document.getElementById('file-pdf').click()" class="p-3 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></button>
+                    
+                    <div class="flex-1 relative"><textarea id="chat-input" aria-label="Chat Input" rows="1" placeholder="Ask a question..." class="w-full pl-4 pr-12 py-3 rounded-xl bg-slate-100 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all"></textarea><button type="button" aria-label="Send Message" onclick="sendChat()" id="send-btn" class="absolute right-2 bottom-2 p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, where, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- APP STATE ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let firebaseConfig = {
+            apiKey: "AIzaSyBvIO14xKq84DZBWNivDQHcLeVQTLx9p9w",
+            authDomain: "bright-mind-portal.firebaseapp.com",
+            projectId: "bright-mind-portal",
+            storageBucket: "bright-mind-portal.firebasestorage.app",
+            messagingSenderId: "634180148860",
+            appId: "1:634180148860:web:8de869c59df400365073f9"
+        };
+        
+        if (typeof __firebase_config !== 'undefined') { try { firebaseConfig = JSON.parse(__firebase_config); } catch (e) {} }
+
+        let app, db, auth;
+        let userId, userRole, userAvatar = "👤";
+        let userClass = null; // Store user class
+        let userName = null;  // Store user name
+        
+        let quizData = [], quizIdx = 0, quizAnswers = {};
+        let currentFileContent = null, currentMime = null;
+        let quizStartTime = null;
+        let quizTimerInterval = null;
+        
+        // Chat State
+        let activeChatId = null; // ID of the person we are chatting with
+        let messageUnsub = null;
+
+        // --- INIT ---
+        try {
+            app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app);
+            const initAuth = async () => { try { initialAuthToken ? await signInWithCustomToken(auth, initialAuthToken) : await signInAnonymously(auth); } catch(e){ console.error(e); } };
+            
+            onAuthStateChanged(auth, async (u) => {
+                if(u) {
+                    userId = u.uid;
+                    const docRef = doc(db, 'artifacts', appId, 'users', userId, 'profile', 'role');
+                    const snap = await getDoc(docRef);
+                    
+                    if(snap.exists() && snap.data().role) {
+                        const data = snap.data();
+                        userRole = data.role;
+                        userClass = data.class;
+                        userName = data.name;
+                        userAvatar = data.avatar || "👤";
+                        
+                        if(userRole === 'Student' && !data.avatar) {
+                            document.getElementById('avatar-modal-overlay').classList.remove('hidden');
+                        } else {
+                            loginSuccess();
+                        }
+                    } else document.getElementById('role-modal-overlay').classList.remove('hidden');
+                } else { initAuth(); }
+            });
+        } catch(e) { alert("Error initializing app"); }
+
+        // --- AUTH & LOGIN LOGIC ---
+        
+        let tempRole = '';
+        
+        window.showLoginForm = (role) => {
+            tempRole = role;
+            document.getElementById('role-selection-buttons').classList.add('hidden');
+            document.getElementById('login-form-container').classList.remove('hidden');
+            document.getElementById('form-role-title').textContent = role;
+            
+            // Adjust fields based on role
+            const lblName = document.getElementById('label-name');
+            const lblClass = document.getElementById('label-class');
+            const inpClass = document.getElementById('login-class');
+            
+            if (role === 'Parent') {
+                lblName.textContent = "Ward's Name";
+                lblClass.textContent = "Ward's Class";
+                inpClass.parentElement.classList.remove('hidden');
+            } else {
+                lblName.textContent = "Name";
+                lblClass.textContent = "Class";
+                inpClass.parentElement.classList.remove('hidden');
+            }
+        };
+        
+        window.resetLogin = () => {
+            document.getElementById('role-selection-buttons').classList.remove('hidden');
+            document.getElementById('login-form-container').classList.add('hidden');
+            document.getElementById('login-name').value = '';
+            document.getElementById('login-class').value = '';
+        };
+
+        window.completeLogin = async () => {
+            const name = document.getElementById('login-name').value.trim();
+            const cls = document.getElementById('login-class').value;
+            
+            if (!name || !cls) return showToast("Please fill all fields", "error");
+            
+            const profileData = { 
+                role: tempRole, 
+                name: name, 
+                class: cls, 
+                avatar: null, 
+                timestamp: serverTimestamp() 
+            };
+            
+            await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile', 'role'), profileData, { merge: true });
+            
+            // Also save to a public directory for messaging discovery
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'directory', userId), {
+                name: name,
+                role: tempRole,
+                class: cls,
+                uid: userId
+            });
+
+            userRole = tempRole;
+            userClass = cls;
+            userName = name;
+            
+            document.getElementById('role-modal-overlay').classList.add('hidden');
+            
+            if(userRole === 'Student') {
+                document.getElementById('avatar-modal-overlay').classList.remove('hidden');
+            } else {
+                loginSuccess();
+            }
+        };
+        
+        window.selectAvatar = async (avatar) => {
+            userAvatar = avatar;
+            await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile', 'role'), { avatar: avatar }, { merge: true });
+            // Update public directory avatar
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'directory', userId), { avatar: avatar }, { merge: true });
+            
+            document.getElementById('avatar-modal-overlay').classList.add('hidden');
+            loginSuccess();
+        };
+
+        window.logoutUser = async () => {
+            if(userId) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile', 'role'));
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'directory', userId));
+            }
+            await signOut(auth);
+            location.reload();
+        }
+        
+        function loginSuccess() {
+            document.getElementById('role-modal-overlay').classList.add('hidden');
+            document.getElementById('main-app-content').classList.remove('opacity-0');
+            
+            document.getElementById('user-role').textContent = userRole;
+            document.getElementById('user-class-display').textContent = `Class ${userClass}`;
+            
+            if(userAvatar && userRole === 'Student') {
+                document.getElementById('user-avatar-display').textContent = userAvatar;
+                document.getElementById('user-avatar-display').classList.remove('hidden');
+            } else {
+                document.getElementById('user-avatar-display').classList.add('hidden');
+            }
+            
+            // Role Logic
+            const isTeacher = userRole === 'Teacher';
+            document.getElementById('teacher-upload-area').classList.toggle('hidden', !isTeacher);
+            document.getElementById('teacher-quiz-upload-area').classList.toggle('hidden', !isTeacher);
+            document.getElementById('student-quiz-area').classList.toggle('hidden', isTeacher);
+            document.getElementById('teacher-comms-area').classList.toggle('hidden', !isTeacher);
+
+            startDataListeners();
+            loadContacts(); // Load contacts for chat
+            showTab('assignments');
+            showToast(`Welcome ${userName}!`, 'success');
+            
+            VanillaTilt.init(document.querySelectorAll("[data-tilt]"), { max: 10, speed: 400, glare: true, "max-glare": 0.3 });
+        }
+
+        // --- COMMUNICATION LOGIC ---
+        function loadContacts() {
+            const dirRef = collection(db, 'artifacts', appId, 'public', 'data', 'directory');
+            // We filter locally because simple queries are safer in this env without indexes
+            onSnapshot(dirRef, (snapshot) => {
+                const list = document.getElementById('contacts-list');
+                list.innerHTML = '';
+                let count = 0;
+                
+                snapshot.forEach(doc => {
+                    const u = doc.data();
+                    if (u.uid === userId) return; // Don't show self
+                    
+                    let shouldShow = false;
+                    
+                    // Logic: Show people in same Class
+                    if (u.class === userClass) {
+                        if (userRole === 'Student' && u.role === 'Teacher') shouldShow = true;
+                        if (userRole === 'Parent' && u.role === 'Teacher') shouldShow = true;
+                        if (userRole === 'Teacher' && (u.role === 'Student' || u.role === 'Parent')) shouldShow = true;
+                    }
+                    
+                    if (shouldShow) {
+                        count++;
+                        const initial = u.name.charAt(0).toUpperCase();
+                        const isTeacher = u.role === 'Teacher';
+                        const badgeColor = isTeacher ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-600';
+                        
+                        // UPDATED: Injected Tailwind classes directly here instead of using @apply in CSS
+                        const baseClasses = "p-3 rounded-xl hover:bg-slate-50 cursor-pointer flex items-center gap-3 transition border border-transparent hover:border-indigo-100";
+                        
+                        list.innerHTML += `
+                        <div onclick="selectContact('${u.uid}', '${u.name}', '${u.role}')" class="${baseClasses}" id="contact-${u.uid}">
+                            <div class="w-10 h-10 rounded-full ${badgeColor} flex items-center justify-center font-bold text-sm shadow-sm">${u.avatar || initial}</div>
+                            <div>
+                                <div class="font-bold text-slate-700 text-sm">${u.name}</div>
+                                <div class="text-[10px] uppercase font-bold text-slate-400">${u.role}</div>
+                            </div>
+                        </div>`;
+                    }
+                });
+                
+                if (count === 0) list.innerHTML = '<div class="text-center p-4 text-slate-400 text-xs">No contacts found in Class ' + userClass + '</div>';
+            });
+        }
+        
+        window.selectContact = (contactId, name, role) => {
+            activeChatId = contactId;
+            
+            // Update UI - Remove active class from all
+            // Note: We use a specific class for active state handling in JS now
+            const allContacts = document.getElementById('contacts-list').children;
+            for(let child of allContacts) {
+                child.classList.remove('bg-indigo-50', 'border-indigo-200');
+                child.classList.add('border-transparent');
+            }
+            
+            // Add active class to selected
+            const activeEl = document.getElementById(`contact-${contactId}`);
+            if (activeEl) {
+                activeEl.classList.remove('border-transparent');
+                activeEl.classList.add('bg-indigo-50', 'border-indigo-200');
+            }
+            
+            const headerHTML = `
+                <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg font-bold">${name.charAt(0)}</div>
+                <div>
+                    <h3 class="font-bold text-slate-800">${name}</h3>
+                    <p class="text-xs text-slate-500">${role}</p>
+                </div>`;
+            document.getElementById('chat-header').innerHTML = headerHTML;
+            
+            // Enable Input
+            const inp = document.getElementById('msg-input');
+            const btn = document.getElementById('msg-send-btn');
+            inp.disabled = false;
+            btn.disabled = false;
+            inp.focus();
+            
+            // Load Messages
+            const msgsRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+            if (messageUnsub) messageUnsub();
+            
+            // Fetch ALL messages and filter client side (simpler than composite index)
+            messageUnsub = onSnapshot(query(msgsRef), (snapshot) => {
+                const area = document.getElementById('messages-area');
+                area.innerHTML = '';
+                const msgs = [];
+                
+                snapshot.forEach(doc => {
+                    const m = doc.data();
+                    if ((m.from === userId && m.to === activeChatId) || (m.from === activeChatId && m.to === userId)) {
+                        msgs.push(m);
+                    }
+                });
+                
+                msgs.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+                
+                if (msgs.length === 0) {
+                    area.innerHTML = '<div class="text-center text-xs text-slate-300 mt-10">No messages yet</div>';
+                }
+                
+                msgs.forEach(m => {
+                    const isMe = m.from === userId;
+                    area.innerHTML += `
+                        <div class="flex w-full ${isMe ? 'justify-end' : 'justify-start'}">
+                            <div class="max-w-[70%] p-3 rounded-xl text-sm ${isMe ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'} shadow-sm">
+                                ${m.text}
+                            </div>
+                        </div>`;
+                });
+                area.scrollTop = area.scrollHeight;
+            });
+        };
+        
+        window.sendUserMessage = async () => {
+            const inp = document.getElementById('msg-input');
+            const txt = inp.value.trim();
+            if (!txt || !activeChatId) return;
+            
+            inp.value = '';
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                from: userId,
+                to: activeChatId,
+                text: txt,
+                timestamp: serverTimestamp()
+            });
+        };
+
+        // --- UI HELPER ---
+        window.showTab = (id) => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active', 'text-indigo-600', 'bg-white'));
+            
+            const tabContent = document.getElementById(id);
+            if (tabContent) tabContent.classList.remove('hidden');
+            
+            const navBtn = document.getElementById(`nav-${id}`);
+            if(navBtn) {
+                navBtn.classList.add('active');
+                if(id !== 'ai_tutor') navBtn.classList.add('text-indigo-600');
+            }
+        };
+
+        window.toggleAiChat = () => {
+            const chat = document.getElementById('ai_tutor');
+            const isHidden = chat.classList.contains('hidden');
+            if (isHidden) {
+                chat.classList.remove('hidden');
+                chat.classList.add('chat-float-enter');
+            } else {
+                chat.classList.add('hidden');
+                chat.classList.remove('chat-float-enter');
+            }
+        };
+
+        window.showToast = (msg, type='info') => {
+            const box = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            el.className = `toast border-l-4 ${type==='success'?'border-green-500':'border-indigo-500'}`;
+            el.innerHTML = `<span>${type==='success'?'✅':'ℹ️'}</span> ${msg}`;
+            box.appendChild(el);
+            setTimeout(() => el.classList.add('show'), 10);
+            setTimeout(() => { el.classList.remove('show'); setTimeout(()=>el.remove(), 300); }, 3000);
+        };
+
+        // --- DATA HANDLERS ---
+        const getRef = (c) => collection(db, 'artifacts', appId, 'public', 'data', c);
+
+        function startDataListeners() {
+            // Assignments
+            onSnapshot(query(getRef('assignments')), s => {
+                const el = document.getElementById('assignment-list');
+                el.innerHTML = s.empty ? '<div class="col-span-full text-center text-slate-400 py-10">No assignments active</div>' : '';
+                let total = s.size;
+                const isTeacher = userRole === 'Teacher';
+                
+                s.forEach(d => {
+                    const a = d.data();
+                    const fileInputId = `file-${d.id}`;
+                    
+                    el.innerHTML += `
+                    <div class="glass-panel p-6 rounded-3xl border border-white/50 hover:-translate-y-1 transition duration-300 relative group" data-tilt>
+                        ${isTeacher ? `
+                        <button onclick="deleteAssignment('${d.id}')" class="absolute top-4 right-4 p-2 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition z-20" title="Delete Assignment">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                        ` : `
+                        <div class="absolute top-4 right-4 w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                        `}
+                        
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-500 mb-1">${a.subject}</div>
+                        <h3 class="font-bold text-lg text-slate-800 mb-2">${a.title}</h3>
+                        <p class="text-sm text-slate-500 mb-4 line-clamp-2">${a.details}</p>
+                        
+                        ${!isTeacher ? `
+                        <div class="mt-4 mb-3 border-t border-slate-100 pt-3">
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Attach Work (PDF/Img)</label>
+                            <input type="file" id="${fileInputId}" accept="image/*,application/pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                        </div>
+                        ` : ''}
+
+                        <div class="flex justify-between items-center mt-auto">
+                            <span class="text-xs font-mono text-slate-400">Due: ${a.dueDate}</span>
+                            ${!isTeacher ? `<button type="button" onclick="submitHW('${d.id}', this)" class="px-4 py-2 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg hover:bg-indigo-200 transition">Submit</button>` : ''}
+                        </div>
+                    </div>`;
+                });
+                VanillaTilt.init(document.querySelectorAll("[data-tilt]"));
+                if(!isTeacher) updateTrackerTotal(total);
+            });
+
+            // Submissions & Scores
+            if(userRole !== 'Teacher') {
+                onSnapshot(query(getRef('submissions'), where('userId', '==', userId)), s => { updateTrackerProgress(s.size); });
+                onSnapshot(query(getRef('quiz_scores'), where('userId', '==', userId)), s => { updateQuizStats(s); });
+            } else {
+                onSnapshot(query(getRef('submissions')), s => { updateTrackerProgress(s.size, true); });
+                onSnapshot(query(getRef('quiz_scores')), s => { updateQuizStats(s, true); });
+            }
+
+            // Notices & Holidays
+            onSnapshot(query(getRef('notices')), s => {
+                const el = document.getElementById('notices-list'); el.innerHTML = '';
+                s.forEach(d => el.innerHTML += `<div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition"><div class="font-bold text-indigo-900">${d.data().title}</div><p class="text-sm text-slate-500 mt-1">${d.data().content}</p></div>`);
+            });
+            onSnapshot(query(getRef('holidays')), s => {
+                const el = document.getElementById('holidays-list'); el.innerHTML = '';
+                s.forEach(d => el.innerHTML += `<div class="flex justify-between items-center p-4 bg-green-50 rounded-2xl border border-green-100 hover:bg-green-100 transition"><span class="font-medium text-green-900">${d.data().reason}</span><span class="text-xs font-bold bg-white px-2 py-1 rounded-md text-green-600">${d.data().date}</span></div>`);
+            });
+
+            // Quiz Questions
+            onSnapshot(query(getRef('quizzes')), s => { 
+                quizData = s.docs.map(d=>({id: d.id, ...d.data()})); 
+                if (userRole === 'Teacher') renderTeacherQuizList();
+            });
+            
+            // Leaderboard (With Avatars)
+            onSnapshot(query(getRef('quiz_scores')), s => {
+                const scores = []; s.forEach(d => scores.push(d.data()));
+                scores.sort((a,b) => b.score - a.score);
+                const el = document.getElementById('leaderboard-body');
+                el.innerHTML = scores.length ? '' : '<tr><td class="p-6 text-center text-slate-400">No scores yet</td></tr>';
+                scores.slice(0, 5).forEach((sc, i) => {
+                    const medal = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `#${i+1}`;
+                    const avatar = sc.avatar || '👤'; 
+                    el.innerHTML += `<tr class="hover:bg-indigo-50/50"><td class="p-4 font-bold text-lg">${medal}</td><td class="p-4 font-medium text-slate-700 flex items-center gap-2"><span class="text-xl">${avatar}</span> <span>${sc.userId ? sc.userId.slice(0,4) : 'User'}..</span></td><td class="p-4 font-bold text-indigo-600">${sc.score}</td></tr>`;
+                });
+            });
+        }
+
+        function renderTeacherQuizList() {
+            const el = document.getElementById('teacher-quiz-list');
+            if(!el) return;
+            el.innerHTML = quizData.length ? '' : '<div class="text-sm text-slate-400">No questions added yet.</div>';
+            
+            quizData.forEach(q => {
+                el.innerHTML += `
+                <div class="bg-white p-4 rounded-xl border border-slate-100 flex justify-between items-center group">
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${q.subject || 'General'}</div>
+                        <div class="font-medium text-slate-700">${q.q}</div>
+                        <div class="text-xs text-indigo-500 font-mono mt-1">Ans: ${q.answer}</div>
+                    </div>
+                    <button onclick="deleteQuiz('${q.id}')" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </div>`;
+            });
+        }
+
+        // --- ACTIONS ---
+        window.uploadAssignment = async (e) => {
+            e.preventDefault();
+            await addDoc(getRef('assignments'), { 
+                title: document.getElementById('assign-title').value, 
+                subject: document.getElementById('assign-subject').value, 
+                dueDate: document.getElementById('assign-due').value, 
+                details: document.getElementById('assign-desc').value, 
+                uploadedBy: userId 
+            });
+            e.target.reset(); showToast("Assignment Published!", "success");
+        };
+
+        window.deleteAssignment = async (id) => {
+            if(!confirm("Delete this assignment?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'assignments', id));
+                showToast("Assignment Deleted", "success");
+            } catch(e) { console.error(e); showToast("Error deleting assignment", "error"); }
+        };
+
+        window.submitHW = async (aid, btn) => {
+            const fileInput = document.getElementById(`file-${aid}`);
+            const file = fileInput ? fileInput.files[0] : null;
+            let attachmentData = null;
+
+            if (file) {
+                // Safety: Check size (Firestore Limit ~1MB, staying under 800KB for safety)
+                if (file.size > 800 * 1024) {
+                    showToast("File too large (Max 800KB)", "error");
+                    return;
+                }
+
+                // Convert to Base64
+                btn.textContent = "Uploading...";
+                attachmentData = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve({
+                        name: file.name,
+                        type: file.type,
+                        data: e.target.result // Base64 string
+                    });
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            btn.textContent = "✓ Done"; 
+            btn.className = "px-4 py-2 bg-green-100 text-green-700 text-xs font-bold rounded-lg cursor-default";
+            btn.onclick = null; // Disable further clicks
+
+            await addDoc(getRef('submissions'), { 
+                assignmentId: aid, 
+                userId, 
+                attachment: attachmentData,
+                timestamp: serverTimestamp() 
+            });
+            
+            showToast("Homework Submitted!", "success");
+            confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+        };
+
+        window.uploadNotice = async (e) => {
+            e.preventDefault();
+            await addDoc(getRef('notices'), { title: document.getElementById('note-title').value, content: document.getElementById('note-content').value });
+            e.target.reset(); showToast("Notice Posted", "success");
+        };
+        window.addHoliday = async (e) => {
+            e.preventDefault();
+            await addDoc(getRef('holidays'), { date: document.getElementById('hol-date').value, reason: document.getElementById('hol-reason').value });
+            e.target.reset(); showToast("Holiday Added", "success");
+        };
+        window.uploadQuiz = async (e) => {
+            e.preventDefault();
+            const opts = ['a','b','c','d'].map(x=>document.getElementById(`opt-${x}`).value);
+            await addDoc(getRef('quizzes'), { 
+                subject: document.getElementById('quiz-subject').value,
+                q: document.getElementById('quiz-q').value, 
+                options: opts, 
+                answer: opts[['A','B','C','D'].indexOf(document.getElementById('quiz-ans').value)] 
+            });
+            e.target.reset(); showToast("Question Added", "success");
+        };
+
+        window.deleteQuiz = async (id) => {
+            if(!confirm("Delete this question?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'quizzes', id));
+                showToast("Question Deleted", "success");
+            } catch(e) { console.error(e); showToast("Error deleting question", "error"); }
+        };
+
+        // --- TRACKER LOGIC ---
+        let totalAssigns = 0;
+        function updateTrackerTotal(n) { totalAssigns = n; }
+        function updateTrackerProgress(n, isTeacher=false) {
+            const pct = totalAssigns > 0 ? Math.round((n / totalAssigns) * 100) : 0;
+            document.getElementById('text-assign').textContent = isTeacher ? n : `${pct}%`;
+            document.getElementById('circle-assign').style.strokeDasharray = isTeacher ? "100, 100" : `${pct}, 100`;
+            document.getElementById('circle-assign').style.stroke = isTeacher ? "#3b82f6" : (pct === 100 ? "#10b981" : "#3b82f6");
+            if(isTeacher) { document.getElementById('label-assign').textContent = "Total Submissions"; document.getElementById('sub-assign').textContent = "Class wide"; }
+        }
+        function updateQuizStats(snap, isTeacher=false) {
+            let total = 0; snap.forEach(d => total += d.data().score);
+            const count = snap.size;
+            const avg = count ? (total/count).toFixed(1) : 0;
+            const avgPct = count ? Math.min(100, Math.round((avg / 5) * 100)) : 0; // Assuming max score 5 approx
+            
+            document.getElementById('val-attempts').textContent = count;
+            document.getElementById('text-score').textContent = `${avgPct}%`;
+            document.getElementById('circle-score').style.strokeDasharray = `${avgPct}, 100`;
+            if(isTeacher) { document.getElementById('label-avg').textContent = "Class Avg"; document.getElementById('label-attempts').textContent = "Total Attempts"; }
+        }
+
+        // --- GAME QUIZ ---
+        window.startQuiz = () => {
+            if(!quizData.length) return showToast("No questions available", "info");
+            quizIdx = 0; quizAnswers = {};
+            
+            document.getElementById('quiz-start-view').classList.add('hidden');
+            document.getElementById('quiz-game-view').classList.remove('hidden');
+            document.getElementById('quiz-timer-container').classList.remove('hidden'); // Show Timer
+
+            // Start Timer
+            quizStartTime = Date.now();
+            updateTimerDisplay();
+            quizTimerInterval = setInterval(updateTimerDisplay, 1000);
+
+            renderQuestion();
+        };
+
+        function updateTimerDisplay() {
+            if (!quizStartTime) return;
+            const now = Date.now();
+            const diffInSeconds = Math.floor((now - quizStartTime) / 1000);
+            const mins = Math.floor(diffInSeconds / 60).toString().padStart(2, '0');
+            const secs = (diffInSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('quiz-timer-display').innerText = `${mins}:${secs}`;
+        }
+
+        function renderQuestion() {
+            if(quizIdx >= quizData.length) return endQuiz();
+            const q = quizData[quizIdx];
+            document.getElementById('q-counter').textContent = `Question ${quizIdx+1} / ${quizData.length}`;
+            document.getElementById('q-subject').textContent = q.subject || 'GENERAL';
+            document.getElementById('q-text').textContent = q.q;
+            document.getElementById('quiz-progress').style.width = `${(quizIdx / quizData.length) * 100}%`;
+            
+            const box = document.getElementById('q-options'); box.innerHTML = '';
+            q.options.forEach(o => {
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.className = "p-6 rounded-2xl bg-slate-50 border-2 border-slate-200 text-lg font-bold text-slate-600 hover:border-indigo-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95 text-left";
+                btn.textContent = o;
+                btn.onclick = () => { quizAnswers[quizIdx] = o; quizIdx++; renderQuestion(); };
+                box.appendChild(btn);
+            });
+        }
+
+        async function endQuiz() {
+            // Stop Timer
+            clearInterval(quizTimerInterval);
+            const endTime = Date.now();
+            const durationSeconds = Math.floor((endTime - quizStartTime) / 1000);
+            const mins = Math.floor(durationSeconds / 60).toString().padStart(2, '0');
+            const secs = (durationSeconds % 60).toString().padStart(2, '0');
+            const timeFormatted = `${mins}:${secs}`;
+
+            document.getElementById('quiz-game-view').classList.add('hidden');
+            document.getElementById('quiz-timer-container').classList.add('hidden');
+            document.getElementById('quiz-end-view').classList.remove('hidden');
+            document.getElementById('quiz-progress').style.width = "100%";
+            
+            // Display Results
+            let score = 0; quizData.forEach((q, i) => { if(quizAnswers[i] === q.answer) score++; });
+            document.getElementById('final-score').textContent = `${score} / ${quizData.length}`;
+            document.getElementById('final-time').textContent = timeFormatted;
+            
+            await addDoc(getRef('quiz_scores'), { 
+                userId, 
+                score, 
+                avatar: userAvatar,
+                timeTaken: timeFormatted, // Save readable string
+                durationSeconds: durationSeconds, // Save raw seconds for potential sorting
+                timestamp: serverTimestamp() 
+            });
+            
+            if(score === quizData.length) confetti({ particleCount: 150, spread: 70 });
+        }
+
+        // --- AI CAMERA & CHAT ---
+        const video = document.getElementById('camera-video');
+        const canvas = document.getElementById('camera-canvas');
+        window.openCameraModal = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+                document.getElementById('camera-modal-overlay').classList.remove('hidden');
+            } catch(e) { document.getElementById('file-cam').click(); }
+        };
+        document.getElementById('btn-close-camera').onclick = () => {
+            document.getElementById('camera-modal-overlay').classList.add('hidden');
+            if(video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+        };
+        document.getElementById('btn-take-photo').onclick = () => {
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            processFile(canvas.toDataURL('image/jpeg'), 'image/jpeg');
+            document.getElementById('btn-close-camera').click();
+        };
+        
+        window.handleFile = (e) => {
+            const f = e.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = () => processFile(r.result, f.type, f.name);
+            r.readAsDataURL(f);
+            e.value = '';
+        };
+
+        function processFile(dataUrl, mimeType, fileName = "file") {
+            currentFileContent = dataUrl.split(',')[1];
+            currentMime = mimeType;
+            
+            document.getElementById('file-preview-area').classList.remove('hidden');
+            
+            if (mimeType.startsWith('image/')) {
+                document.getElementById('img-preview-container').classList.remove('hidden');
+                document.getElementById('pdf-preview-container').classList.add('hidden');
+                document.getElementById('img-preview').src = dataUrl;
+            } else if (mimeType === 'application/pdf') {
+                document.getElementById('img-preview-container').classList.add('hidden');
+                document.getElementById('pdf-preview-container').classList.remove('hidden');
+                document.getElementById('pdf-name').textContent = fileName;
+            }
+        }
+
+        window.clearFile = () => { 
+            currentFileContent = null; 
+            currentMime = null;
+            document.getElementById('file-preview-area').classList.add('hidden'); 
+        };
+
+        window.sendChat = async () => {
+            const inp = document.getElementById('chat-input');
+            const txt = inp.value.trim();
+            if(!txt && !currentFileContent) return;
+            
+            let userMsg = txt || "Analyzed File";
+            if (currentMime === 'application/pdf') userMsg += " (PDF)";
+            else if (currentMime && currentMime.startsWith('image/')) userMsg += " (Image)";
+
+            renderMsg('user', userMsg);
+            
+            const payload = { txt, file: currentFileContent, mime: currentMime };
+            
+            inp.value = ''; clearFile();
+            document.getElementById('ai-typing').classList.remove('hidden');
+            document.getElementById('chat-history').scrollTop = document.getElementById('chat-history').scrollHeight;
+
+            try {
+                const parts = [{ text: payload.txt }];
+                if(payload.file) {
+                    parts.unshift({ inlineData: { mimeType: payload.mime, data: payload.file } });
+                }
+                
+                // UPDATED: Added correct API Key
+                const API_KEY = "AIzaSyDGeDR08xI-J1hlTsxD42EwylVLSoC0rC4";
+                
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ role: "user", parts }], systemInstruction: { parts: [{ text: "You are Wisewhiz, an academic AI helper. Solve academic problems step-by-step. Use Markdown & Latex. You can process images and PDF documents." }] } })
+                });
+                const data = await res.json();
+                renderMsg('ai', data.candidates?.[0]?.content?.parts?.[0]?.text || "Error processing request.");
+            } catch(e) { renderMsg('ai', "Connection Error."); }
+            document.getElementById('ai-typing').classList.add('hidden');
+        };
+
+        window.renderMsg = (role, txt) => {
+            const box = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = `flex ${role==='user' ? 'justify-end' : 'justify-start'} animate-enter`;
+            
+            const avatar = role === 'user' 
+                ? `<div class="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-xl ml-2 shadow-sm">${userAvatar}</div>`
+                : `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold mr-2 shadow-lg shadow-indigo-500/30">AI</div>`;
+            
+            const bubble = `<div class="${role==='user'?'bubble-user':'bubble-ai'} p-4 max-w-[85%] shadow-sm text-sm"><div>${marked.parse(txt)}</div></div>`;
+            
+            div.innerHTML = role === 'user' ? bubble + avatar : avatar + bubble;
+            box.appendChild(div);
+            renderMathInElement(div, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}] });
+            box.scrollTop = box.scrollHeight;
+        };
+        
+        // Enter key
+        document.getElementById('chat-input').onkeydown = (e) => { if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }};
+    </script>
+</body>
+</html>
