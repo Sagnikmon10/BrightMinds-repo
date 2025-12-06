@@ -1207,13 +1207,24 @@
                 // UPDATED: Added correct API Key
                 const API_KEY = "AIzaSyDx3zgBP-DjxOhsoSOlhep2yPqtNsUWdpk";
                 
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`, {
+                // FIX: Changed model from 'gemini-2.5-flash-preview-09-2025' to public 'gemini-1.5-flash'
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ role: "user", parts }], systemInstruction: { parts: [{ text: "You are Wisewhiz, an academic AI helper. Solve academic problems step-by-step. Use Markdown & Latex. You can process images and PDF documents." }] } })
                 });
                 const data = await res.json();
-                renderMsg('ai', data.candidates?.[0]?.content?.parts?.[0]?.text || "Error processing request.");
-            } catch(e) { renderMsg('ai', "Connection Error."); }
+                
+                // Added Error Logging
+                 if (data.error) {
+                    console.error("API Error:", data.error);
+                    renderMsg('ai', `Error: ${data.error.message}`);
+                } else {
+                    renderMsg('ai', data.candidates?.[0]?.content?.parts?.[0]?.text || "Error processing request.");
+                }
+            } catch(e) { 
+                console.error(e);
+                renderMsg('ai', "Connection Error."); 
+            }
             document.getElementById('ai-typing').classList.add('hidden');
         };
 
